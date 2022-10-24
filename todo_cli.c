@@ -4,14 +4,16 @@
 #include <curses.h>
 #include <assert.h>
 #include <time.h>
+#include <string.h>
 /*
     Todo_cli.c is een programma dat bedoelt is om dagelijks een lijst bij te houden met taken.
     todo_cli genereert een score gebasseerd op het aantal geslaagde taken.
     Het maakt gebruik van invoer.
 */
 
+// Union zorgt dat de twee variabelen hetzelfde geheugenadress delen.
 union taak_num {
-    int datum;
+    char *datum;
     int score;
 };
 
@@ -22,20 +24,29 @@ struct taak_item {
 
 typedef struct taak_item taak_item;
 
-/*Deze functie vraagt de gebruiker om invoer.
- * */
+/*
+Deze functie vraagt de gebruiker om invoer.
+*/
 char *vraag_lijst(void) {
-    char toets;
-    char *taak = malloc(300*sizeof(int));
-    
-    for (int i = 0; i < (int)(300*sizeof(int)); i++) {
+    int toets;
+    size_t grootte = 300*sizeof(int);    
+    char *taak = malloc(grootte);
+
+    for (int i = 0; i < (int)grootte; i++) {
         taak[i] = 0;
     }
-
+        
     int i = 0;
     printw("Noem een taak:\n");
     while (toets != '\n') {
         toets = getch();
+        if ((int)toets == 263) {
+            if (taak[i] != 0) {
+                taak[i] = 0;
+                break;
+            }
+        }
+
         taak[i] = toets;
         printw("%c", toets);
         i++;
@@ -43,25 +54,25 @@ char *vraag_lijst(void) {
     return taak;
 }
 
-taak_item *maak_taak_struct(char *taak, int datum, int score) {
-    static taak_item task;
-    task.taaknum.datum = datum;
-    task.taaknum.score = score;
-    task.taak_zin = taak;
-    return &task;
-}
-
-/*Deze functie print de inhoud van een array
+/*
+Deze functie print de inhoud van een array
 */
 void print_array(char ar[]) {
-    for (int i = 0; i < (int)(300*sizeof(int)); i++) {
+    int i = 0;
+    while (ar[i] != '\n') {
         printw("%c", ar[i]);
+        i++;
     }
+    printw("\n");
 }
 
+/*Deze functie vraagt de prioriteitsscore aan de gebruiker.
+Invoer: void.
+Uitvoer: de score.
+*/
 int score_vraag(void) {
-    char toets;
-    int score;    
+    int toets;
+    int score;
     int valide_invoer = 0;
     toets = 0;
 
@@ -82,25 +93,43 @@ int score_vraag(void) {
     return score;
 }
 
-int main(void) {
+/*Deze functie initialiseert ncurses.*/
+void init_ncurses(void) {
     initscr();
     noecho();
     clear();
     keypad(stdscr, true);
+}
 
-    char *taak = vraag_lijst(); 
-    //print_array(taak);
+/*
+Deze functie organiseert de taken als enkele speciale variabele,
+*/
+taak_item *maak_taak(char *datum_str, char *taak_zin){
+    static taak_item task;
+
+    time_t d;
+    time(&d);
+
+    task.taak_zin = taak_zin;
+    task.taaknum.datum = ctime(&d);
     
-    int datum = 20;
-    //int datum = datum_vraag();
-
     int score = score_vraag();
-    taak_item *taakje = maak_taak_struct(taak, datum, score);
+    return &task; 
+}
+
+int main(void) {
+    init_ncurses();
+    char *datum_str = malloc(200*sizeof(time_t));
+    char *taak_zin = vraag_lijst(); 
+    
+    taak_item *taak_een = maak_taak(datum_str, taak_zin);
+    
     clear(); 
-    printw("%d", taakje->taaknum.score-48);
+    printw("datum: %s", taak_een->taaknum.datum);
     getch();
 
     endwin();
-    free(taak);
+    free(datum_str);
+    free(taak_zin);
     return 0;
 }
