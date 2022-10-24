@@ -2,12 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <curses.h>
+#include <assert.h>
+#include <time.h>
 /*
     Todo_cli.c is een programma dat bedoelt is om dagelijks een lijst bij te houden met taken.
     todo_cli genereert een score gebasseerd op het aantal geslaagde taken.
     Het maakt gebruik van invoer.
 */
-
 
 union taak_num {
     int datum;
@@ -21,8 +22,6 @@ struct taak_item {
 
 typedef struct taak_item taak_item;
 
-
-
 /*Deze functie vraagt de gebruiker om invoer.
  * */
 char *vraag_lijst(void) {
@@ -34,38 +33,53 @@ char *vraag_lijst(void) {
     }
 
     int i = 0;
-
     printw("Noem een taak:\n");
     while (toets != '\n') {
         toets = getch();
-        if (toets != 'k' || toets != '\n') {
-            taak[i] = toets;
-            printw("%c", toets);
-        }
+        taak[i] = toets;
+        printw("%c", toets);
         i++;
     }
-
     return taak;
 }
 
 taak_item *maak_taak_struct(char *taak, int datum, int score) {
-    static taak_item task;    
+    static taak_item task;
     task.taaknum.datum = datum;
     task.taaknum.score = score;
     task.taak_zin = taak;
-
     return &task;
 }
 
 /*Deze functie print de inhoud van een array
 */
 void print_array(char ar[]) {
-    //for (int i = 0; i < (int)(TAAK_GROOTTE*sizeof(int)); i++) {
-    //printw("%c%c%c", ar[0], ar[1], ar[2]);
     for (int i = 0; i < (int)(300*sizeof(int)); i++) {
         printw("%c", ar[i]);
     }
-            
+}
+
+int score_vraag(void) {
+    char toets;
+    int score;    
+    int valide_invoer = 0;
+    toets = 0;
+
+    while (toets != '\n') {
+        printw("Wat is de prioriteit van 1 tot 10?\n");
+        toets = getch();
+        if (48 < toets && toets < 58) {
+            score = toets;
+            valide_invoer = 1;
+            break;
+        }
+    }
+    if (valide_invoer == 0) {
+        printw("error, invalide invoer");
+        getch();
+        exit(1);
+    }
+    return score;
 }
 
 int main(void) {
@@ -75,15 +89,17 @@ int main(void) {
     keypad(stdscr, true);
 
     char *taak = vraag_lijst(); 
-    print_array(taak);
+    //print_array(taak);
     
     int datum = 20;
     //int datum = datum_vraag();
-    int score = 30;
-    //int score = score_vraag();
-    maak_taak_struct(taak, datum, score);
 
+    int score = score_vraag();
+    taak_item *taakje = maak_taak_struct(taak, datum, score);
+    clear(); 
+    printw("%d", taakje->taaknum.score-48);
     getch();
+
     endwin();
     free(taak);
     return 0;
