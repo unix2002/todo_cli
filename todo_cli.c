@@ -12,14 +12,14 @@
 */
 
 // Union zorgt dat de twee variabelen hetzelfde geheugenadress delen.
-union taak_num {
+struct taak_num {
     char *datum;
     int score;
 };
 
 struct taak_item {
     char *taak_zin;
-    union taak_num taaknum;
+    struct taak_num taaknum;
 };
 
 typedef struct taak_item taak_item;
@@ -106,27 +106,32 @@ Deze functie organiseert de taken als enkele speciale variabele,
 */
 taak_item *maak_taak(char *datum_str, char *taak_zin){
     static taak_item task;
-
     time_t d;
     time(&d);
-
     task.taak_zin = taak_zin;
     task.taaknum.datum = ctime(&d);
-    
-    int score = score_vraag();
+    task.taaknum.score = score_vraag()-48;
     return &task; 
+}
+
+/*Print alle info in de taak op een overzichtelijke manier.*/
+void print_taak(taak_item *taak) {    
+    clear();
+    printw("Score: %d\n", taak->taaknum.score);
+    printw("De taak is: ");
+    print_array(taak->taak_zin);
+    printw("Datum: %s", taak->taaknum.datum);
+    getch();
 }
 
 int main(void) {
     init_ncurses();
-    char *datum_str = malloc(200*sizeof(time_t));
-    char *taak_zin = vraag_lijst(); 
-    
+    char *datum_str = malloc(sizeof(time_t));
+    char *taak_zin = vraag_lijst();
+ 
     taak_item *taak_een = maak_taak(datum_str, taak_zin);
-    
-    clear(); 
-    printw("datum: %s", taak_een->taaknum.datum);
-    getch();
+
+    print_taak(taak_een);
 
     endwin();
     free(datum_str);
